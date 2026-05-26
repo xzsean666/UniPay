@@ -89,6 +89,31 @@ Optional bind address:
 UNIPAY_GATEWAY_BIND_ADDR=127.0.0.1:8080
 ```
 
+Docker files:
+
+- `Dockerfile`
+- `docker-compose.yml`
+- `.env.example`
+- `.dockerignore`
+
+Docker compose run:
+
+```text
+cp .env.example .env
+docker compose up --build
+```
+
+`docker-compose.yml` loads `.env.example` and then optional `.env`; use `.env`
+for local secret overrides.
+
+Container health check:
+
+```text
+curl http://127.0.0.1:8080/v1/health/live
+```
+
+See `docs/DEPLOYMENT.md` for Docker and environment variable details.
+
 API contract artifacts:
 
 - `docs/API_CONTRACT.md` is the canonical human-readable contract.
@@ -112,6 +137,18 @@ Configuration groups:
 | WeChat Pay | Merchant id, app id, private key path, serial number, public key or platform certificate, API v3 key, notify URL. |
 | Alipay | App id, private key path, Alipay public key or certificate, gateway URL, charset, sign type, notify URL, return URL. |
 | Observability | Log level, trace id behavior. |
+
+Currently implemented environment variables:
+
+| Variable | Required | Used by | Notes |
+| --- | --- | --- | --- |
+| `UNIPAY_GATEWAY_API_KEYS` | Yes | Gateway auth | Comma-separated `caller_id:api_key` entries. |
+| `UNIPAY_GATEWAY_BIND_ADDR` | No | Gateway server | Use `0.0.0.0:8080` in Docker. Default is `127.0.0.1:8080`. |
+| `RUST_LOG` | No | Tracing subscriber | Example: `info,unipay_gateway=debug`. |
+| `UNIPAY_GATEWAY_PORT` | Compose only | Docker Compose | Host port mapped to container `8080`. |
+
+Provider and database variables shown in `.env.example` are reserved for future
+work and are not read by the current MVP.
 
 Expected environments:
 

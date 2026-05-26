@@ -12,6 +12,7 @@ this index first, then open the documents relevant to the task.
 | `ARCHITECTURE.md` | Overall module architecture and data flow. |
 | `SPEC.md` | Product and system specification. |
 | `BUILD.md` | Build, usage, verification, and planned development sequence. |
+| `DEPLOYMENT.md` | Docker deployment, compose usage, and environment variables. |
 | `nextsession.md` | Current handoff state and next actions. |
 
 ## Production Readiness Documents

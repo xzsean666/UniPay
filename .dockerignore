@@ -1,0 +1,9 @@
+target/
+tests/contract-tests/target/
+.git/
+.env
+.env.*
+!.env.example
+Dockerfile
+docker-compose.yml
+**/*.rs.bk

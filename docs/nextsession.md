@@ -8,7 +8,8 @@ Implementation status: MVP workspace implemented and verified for local
 development. The Gateway enforces caller-scoped resources, required
 `Idempotency-Key` headers on POST routes, request-hash conflict detection, and
 fail-closed provider webhook handling. The current project is buildable and
-runnable with in-memory storage. Live provider API calls are not enabled yet.
+runnable with in-memory storage. Docker deployment examples and environment
+variable documentation are present. Live provider API calls are not enabled yet.
 
 ## Current Progress
 
@@ -20,6 +21,7 @@ Completed the required pre-implementation documentation workflow:
 4. Step 2 hardening update for production readiness and cross-backend
    integration.
 5. Step 4 MVP implementation and production-blocker hardening pass.
+6. Step 4 Docker deployment and environment variable examples.
 
 Commits created:
 
@@ -125,6 +127,8 @@ Documentation:
   requirements, gateway routes, signing rules, error model, idempotency, and test
   strategy.
 - `docs/BUILD.md` records build, test, configuration, and development commands.
+- `docs/DEPLOYMENT.md` records Docker deployment, compose usage, and current
+  environment variables.
 - `docs/API_CONTRACT.md` defines the stable `/v1` Gateway API for backend
   callers.
 - `docs/openapi.yaml` provides a machine-readable API draft for client
@@ -152,6 +156,8 @@ Implementation:
 - Root `Cargo.toml` workspace created.
 - `Cargo.lock` generated.
 - Gateway binary `unipay-gateway` created.
+- Dockerfile, docker-compose example, `.env.example`, and `.dockerignore`
+  created.
 - `/v1/payments`, `/v1/refunds`, webhook, and health routes implemented.
 - API key middleware implemented.
 - In-memory Gateway service implemented with caller isolation, required POST
@@ -190,6 +196,15 @@ UNIPAY_GATEWAY_API_KEYS=test-caller:test-api-key cargo run -p unipay-gateway
 Default bind address is `127.0.0.1:8080`. Override with
 `UNIPAY_GATEWAY_BIND_ADDR`.
 
+To run with Docker Compose:
+
+```text
+cp .env.example .env
+docker compose up --build
+```
+
+Docker must bind the Gateway to `0.0.0.0:8080` inside the container.
+
 Verification commands already run successfully:
 
 ```text
@@ -199,9 +214,12 @@ cargo test --workspace
 cargo build --workspace
 cargo test --manifest-path tests/contract-tests/Cargo.toml
 cargo audit
+docker compose --env-file .env.example config
 ```
 
 `cargo-deny` is not installed in the current local environment.
+`docker build -t unipay-gateway:local .` could not be completed in the current
+local environment because the user cannot connect to `/var/run/docker.sock`.
 
 ## Risks And Unknowns
 
