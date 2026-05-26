@@ -78,6 +78,10 @@ paths:
                         $ref: "#/components/schemas/Payment"
         "404":
           $ref: "#/components/responses/ErrorResponse"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
         "503":
           $ref: "#/components/responses/ErrorResponse"
         "504":
@@ -149,6 +153,10 @@ paths:
                         $ref: "#/components/schemas/Refund"
         "404":
           $ref: "#/components/responses/ErrorResponse"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
         "503":
           $ref: "#/components/responses/ErrorResponse"
         "504":
@@ -171,11 +179,15 @@ paths:
             schema:
               type: object
               additionalProperties: true
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: true
       responses:
         "200":
           description: Provider-specific success acknowledgement.
         "400":
-          description: Invalid or unverifiable webhook.
+          $ref: "#/components/responses/ErrorResponse"
   /v1/webhooks/{provider}/refunds:
     post:
       operationId: receiveRefundWebhook
@@ -194,11 +206,15 @@ paths:
             schema:
               type: object
               additionalProperties: true
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              additionalProperties: true
       responses:
         "200":
           description: Provider-specific success acknowledgement.
         "400":
-          description: Invalid or unverifiable webhook.
+          $ref: "#/components/responses/ErrorResponse"
   /v1/health/live:
     get:
       operationId: liveness
@@ -226,7 +242,7 @@ components:
     IdempotencyKey:
       name: Idempotency-Key
       in: header
-      required: false
+      required: true
       schema:
         type: string
         minLength: 1

@@ -1,0 +1,14 @@
+{
+  "provider": "wechat",
+  "merchant_order_id": "order_202605260001",
+  "merchant_refund_id": "refund_202605260001_001",
+  "amount": {
+    "currency": "CNY",
+    "amount_minor": 100
+  },
+  "reason": "Customer requested refund",
+  "notify_url": "https://merchant.example.com/refund-callback",
+  "metadata": {
+    "operator_id": "ops_10001"
+  }
+}

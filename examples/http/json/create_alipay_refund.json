@@ -1,0 +1,14 @@
+{
+  "provider": "alipay",
+  "merchant_order_id": "order_202605260002",
+  "merchant_refund_id": "refund_202605260002_001",
+  "amount": {
+    "currency": "CNY",
+    "amount_minor": 199
+  },
+  "reason": "Customer requested refund",
+  "notify_url": "https://merchant.example.com/alipay-refund-callback",
+  "metadata": {
+    "operator_id": "ops_10002"
+  }
+}

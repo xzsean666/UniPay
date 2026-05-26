@@ -54,7 +54,7 @@ Optional request tracing header:
 X-Request-Id: <caller_trace_id>
 ```
 
-Optional idempotency header:
+Required idempotency header for `POST /v1/payments` and `POST /v1/refunds`:
 
 ```text
 Idempotency-Key: <caller_idempotency_key>
@@ -67,6 +67,8 @@ Rules:
 - Invalid or missing API keys return `401`.
 - Authenticated callers may still receive `403` when caller-specific provider
   access control is introduced.
+- `Idempotency-Key` must be stable for the same business operation and must not
+  be reused with different request parameters.
 
 ## Common Request Rules
 
@@ -86,6 +88,8 @@ Required client behavior:
 - Set a unique `merchant_order_id` for each business order.
 - Set a unique `merchant_refund_id` for each refund attempt.
 - Reuse the same idempotency value when retrying the same request.
+- Treat `409 IDEMPOTENCY_CONFLICT` as a signal to query the existing resource
+  and inspect caller-side retry behavior.
 - Treat network timeout as unknown state and query before creating a new payment
   or refund.
 
@@ -356,6 +360,9 @@ Rules:
 - Webhook routes do not use business API key authentication.
 - Provider signature verification is mandatory.
 - Raw body and original headers must be captured before parsing.
+- Current local implementation fails closed with `SIGNATURE_VERIFY_FAILED`
+  until production provider verifiers are configured; it must never accept a
+  provider webhook by parsing JSON alone.
 - The route should persist the webhook event and acknowledge provider only after
   durable storage succeeds.
 - Business processing should run asynchronously after acknowledgement.
@@ -400,4 +407,3 @@ Implementation must include contract tests for:
 - Unknown enum handling.
 - Webhook raw-body preservation.
 - Versioned route compatibility.
-

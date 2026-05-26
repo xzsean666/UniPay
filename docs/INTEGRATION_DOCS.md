@@ -8,6 +8,15 @@ changes.
 
 Access date: 2026-05-26, Asia/Shanghai.
 
+Refresh note on 2026-05-26:
+
+- WeChat Pay Native payment, query, refund, callback, and signing pages were
+  re-opened from the official WeChat Pay documentation domain.
+- Alipay Open Platform pages remain JavaScript-rendered in automated tools; use
+  the official URLs below and verify details in a browser before implementation.
+- Future-provider links were refreshed to official documentation entry points
+  for Stripe, PayPal, Apple Pay, and Google Pay.
+
 Rules:
 
 - Prefer official documentation over blogs, examples, or copied snippets.
@@ -117,7 +126,7 @@ Recommended documents:
 | Webhooks guide | https://developer.paypal.com/api/rest/webhooks/ | Webhooks require successful 2xx receipt and verification. |
 | Webhooks API reference | https://developer.paypal.com/docs/api/webhooks/v1/ | Use for verify-webhook-signature behavior. |
 | REST API authentication | https://developer.paypal.com/api/rest/authentication/ | Use for OAuth2 token flow. |
-| Idempotency | https://developer.paypal.com/api/rest/reference/idempotency/ | Use `PayPal-Request-Id` behavior when adding PayPal. |
+| Idempotency | https://developer.paypal.com/reference/guidelines/idempotency/ | Use `PayPal-Request-Id` behavior when adding PayPal. |
 
 Implementation checkpoints:
 
@@ -131,13 +140,13 @@ Implementation checkpoints:
 Official documentation base:
 
 - https://developer.apple.com/apple-pay/
-- https://developer.apple.com/documentation/applepayontheweb
+- https://developer.apple.com/documentation/apple_pay_on_the_web
 
 Recommended documents:
 
 | Scope | Official URL | Observed note |
 | --- | --- | --- |
-| Apple Pay on the Web | https://developer.apple.com/documentation/applepayontheweb | JavaScript-rendered official docs; verify in browser. |
+| Apple Pay on the Web | https://developer.apple.com/documentation/apple_pay_on_the_web | JavaScript-rendered official docs; verify in browser. |
 | Apple Pay JS API | https://developer.apple.com/documentation/applepayontheweb/apple-pay-js-api | JavaScript-rendered official docs; verify in browser. |
 | Sandbox testing | https://developer.apple.com/apple-pay/sandbox-testing/ | Contains current sandbox testing requirements and supported regions. |
 | Apple Pay merchant support | https://developer.apple.com/contact/apple-pay/ | Use for merchant onboarding issues. |
@@ -159,7 +168,7 @@ Recommended documents:
 
 | Scope | Official URL | Observed latest update |
 | --- | --- | --- |
-| Web overview | https://developers.google.com/pay/api/web/overview | 2026-03-19 UTC |
+| Web overview | https://developers.google.com/pay/api/web/overview | 2025-06-26 UTC observed on official page summary. |
 | Request objects | https://developers.google.com/pay/api/web/reference/request-objects | Verify before implementation; page documents `PaymentDataRequest` and tokenization request objects. |
 | Response objects | https://developers.google.com/pay/api/web/reference/response-objects | Use for parsing payment data responses. |
 | Payment data cryptography | https://developers.google.com/pay/api/web/guides/resources/payment-data-cryptography | Use if direct token decryption is required. |
@@ -184,4 +193,3 @@ Before implementing or modifying a provider adapter:
 6. Confirm sandbox availability.
 7. Update this file with the new access date, observed update date, and any
    changed URLs.
-

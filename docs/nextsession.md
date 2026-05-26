@@ -1,11 +1,14 @@
 # Next Session Handoff
 
-Current step: Step 3 - Context Handoff.
+Current step: Step 4 - Implementation Handoff.
 
 Date: 2026-05-26, Asia/Shanghai.
 
-Implementation status: not started. No Rust code, Cargo workspace, or gateway
-code has been created. Production hardening documentation has been added.
+Implementation status: MVP workspace implemented and verified for local
+development. The Gateway enforces caller-scoped resources, required
+`Idempotency-Key` headers on POST routes, request-hash conflict detection, and
+fail-closed provider webhook handling. The current project is buildable and
+runnable with in-memory storage. Live provider API calls are not enabled yet.
 
 ## Current Progress
 
@@ -16,15 +19,16 @@ Completed the required pre-implementation documentation workflow:
 3. Step 3 - Context Handoff.
 4. Step 2 hardening update for production readiness and cross-backend
    integration.
+5. Step 4 MVP implementation and production-blocker hardening pass.
 
 Commits created:
 
 - `46c9e00` - `feat: add architecture design docs`
 - `99e8e30` - `feat: add project specification docs`
 - `a38aff5` - `feat: add session handoff docs`
+- `f7c9ef7` - `feat: add production readiness documentation`
 
-The current documentation hardening changes should be committed after this file
-is updated.
+The Step 4 implementation commit should exist after this handoff is updated.
 
 ## Architecture Summary
 
@@ -63,6 +67,19 @@ Planned modules:
 - `examples`
 - `docs`
 
+Implemented modules:
+
+- `crates/common`
+- `crates/core`
+- `crates/storage`
+- `crates/signing`
+- `crates/http-client`
+- `crates/wechat`
+- `crates/alipay`
+- `gateway`
+- `examples/http`
+- `tests/contract-tests`
+
 MVP providers:
 
 - WeChat Pay v3 Native payment.
@@ -75,11 +92,22 @@ MVP operations:
 - Refund payment.
 - Query refund.
 - Verify and parse webhook.
-- Persist payment, refund, provider request, webhook, and idempotency records.
-- Process webhooks asynchronously with dead-letter handling.
+- Keep payment, refund, webhook deduplication, and idempotency records in local
+  memory for development.
+- Fail closed on provider webhooks until real signature verification is wired.
 - Gateway API key authentication.
 - Unified error response.
 - Structured logging.
+
+Current MVP caveat:
+
+- Gateway stores data in memory.
+- WeChat and Alipay crates currently implement provider-neutral mapping,
+  local payment-action generation, and webhook parsing entry points.
+- Gateway webhook routes currently reject provider callbacks because production
+  signature verification is not configured yet.
+- Live provider HTTP calls and cryptographic verification must be completed
+  before real-money production.
 
 ## Completed Parts
 
@@ -96,8 +124,7 @@ Documentation:
 - `docs/SPEC.md` contains product scope, MVP scope, domain model, provider
   requirements, gateway routes, signing rules, error model, idempotency, and test
   strategy.
-- `docs/BUILD.md` records the current non-buildable status and the planned build,
-  test, configuration, and development sequence.
+- `docs/BUILD.md` records build, test, configuration, and development commands.
 - `docs/API_CONTRACT.md` defines the stable `/v1` Gateway API for backend
   callers.
 - `docs/openapi.yaml` provides a machine-readable API draft for client
@@ -120,55 +147,61 @@ Documentation:
 - `docs/INTEGRATION_DOCS.md` centralizes official provider documentation links
   for WeChat Pay, Alipay, Stripe, PayPal, Apple Pay, and Google Pay.
 
-No implementation code has been written.
+Implementation:
+
+- Root `Cargo.toml` workspace created.
+- `Cargo.lock` generated.
+- Gateway binary `unipay-gateway` created.
+- `/v1/payments`, `/v1/refunds`, webhook, and health routes implemented.
+- API key middleware implemented.
+- In-memory Gateway service implemented with caller isolation, required POST
+  idempotency keys, request-hash conflict detection, refund state checks, and
+  webhook fail-closed behavior.
+- Core traits and models implemented.
+- In-memory storage trait implementation added, including refund lookup for
+  refundable-amount checks.
+- Provider mapping tests added for WeChat and Alipay.
+- HTTP request examples and contract tests added.
 
 ## Pending Tasks
 
-Do not start these until the user explicitly approves Step 4 implementation.
-
-1. Create Rust workspace structure.
-2. Create empty crate boundaries for common, core, storage, signing,
-   http-client, wechat, and alipay.
-3. Define core domain models and provider traits.
-4. Implement common value objects, especially amount and currency.
-5. Implement unified error types from `ERROR_CODES.md`.
-6. Implement storage interfaces and ledger state transitions from
-   `DATA_MODEL.md`.
-7. Implement signing interfaces and fixture-driven tests.
-8. Implement shared HTTP client boundary.
-9. Implement Gateway `/v1` API validation from `API_CONTRACT.md`.
-10. Implement webhook event persistence, deduplication, and worker flow from
-    `WEBHOOK_RELIABILITY.md`.
-11. Implement WeChat Pay v3 Native create payment mapping.
-12. Implement WeChat Pay query and refund mapping.
-13. Implement WeChat Pay webhook signature verification and resource decryption.
-14. Implement Alipay web payment create mapping.
-15. Implement Alipay query and refund mapping.
-16. Implement Alipay async notification verification.
-17. Implement Gateway API routes, health checks, worker, and API key
-    authentication.
-18. Add unit tests, contract tests, mocked provider tests, and webhook
-    reliability tests.
-19. Add examples after SDK behavior is stable.
-20. Update `docs/BUILD.md` with real commands and package names.
-21. Update `docs/nextsession.md` at the end of the next session.
+1. Replace Gateway in-memory service with core `PaymentService` plus storage and
+   provider registry wiring.
+2. Implement durable database storage and migrations.
+3. Implement live WeChat Pay v3 HTTP calls, request signing, response
+   verification, callback decryption, and certificate/public key rotation.
+4. Implement live Alipay HTTP calls, RSA2 signing, response verification, and
+   async notification verification.
+5. Add provider sandbox integration tests with credentials kept outside git.
+6. Add webhook worker persistence and dead-letter processing.
+7. Add metrics, tracing fields, readiness dependency checks, and deployment
+   manifests.
+8. Add generated clients or OpenAPI validation in CI if needed.
+9. Update `docs/nextsession.md` after the next implementation session.
 
 ## Next Actions
 
-If the user approves implementation, begin with the smallest buildable slice:
-
-1. Create the Cargo workspace and crate directories.
-2. Add minimal crate manifests with no provider logic.
-3. Add core provider-neutral models and compile them.
-4. Add storage trait skeletons without database-specific implementation.
-5. Add tests for amount validation, status mapping, and public error codes.
-6. Commit the workspace skeleton before starting provider-specific code.
-
-Recommended first implementation commit:
+To run locally:
 
 ```text
-feat: add rust workspace skeleton
+UNIPAY_GATEWAY_API_KEYS=test-caller:test-api-key cargo run -p unipay-gateway
 ```
+
+Default bind address is `127.0.0.1:8080`. Override with
+`UNIPAY_GATEWAY_BIND_ADDR`.
+
+Verification commands already run successfully:
+
+```text
+cargo fmt --all --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+cargo build --workspace
+cargo test --manifest-path tests/contract-tests/Cargo.toml
+cargo audit
+```
+
+`cargo-deny` is not installed in the current local environment.
 
 ## Risks And Unknowns
 
@@ -192,6 +225,9 @@ Architecture risk:
 - Storage transaction boundaries must prevent duplicate charges and duplicate
   refunds under retries.
 - API contract and `openapi.yaml` must remain synchronized.
+- Current Gateway uses a local in-memory service, so process restart loses
+  state.
+- Provider adapters are not yet connected to live provider APIs.
 
 Security risk:
 

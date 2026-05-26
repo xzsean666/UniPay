@@ -1,0 +1,6 @@
+/target/
+/tests/contract-tests/target/
+**/*.rs.bk
+.env
+.env.*
+!.env.example

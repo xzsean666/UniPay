@@ -1,0 +1,10 @@
+{
+  "provider": "wechat",
+  "merchant_order_id": "order_invalid_float_amount_001",
+  "amount": {
+    "currency": "CNY",
+    "amount_minor": 1.25
+  },
+  "subject": "Invalid floating amount order",
+  "channel": "native"
+}

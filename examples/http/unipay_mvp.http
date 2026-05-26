@@ -1,0 +1,144 @@
+@baseUrl = http://127.0.0.1:8080
+@apiKey = replace-with-local-api-key
+@orderId = order_202605260001
+@refundId = refund_202605260001_001
+
+### Liveness
+GET {{baseUrl}}/v1/health/live
+X-Request-Id: sample-live-001
+
+### Readiness
+GET {{baseUrl}}/v1/health/ready
+X-Request-Id: sample-ready-001
+
+### Create WeChat Native payment
+POST {{baseUrl}}/v1/payments
+Authorization: Bearer {{apiKey}}
+Idempotency-Key: {{orderId}}
+X-Request-Id: sample-create-wechat-001
+Content-Type: application/json
+
+< ./json/create_wechat_native_payment.json
+
+### Replay WeChat Native payment with same idempotency key and body
+POST {{baseUrl}}/v1/payments
+Authorization: Bearer {{apiKey}}
+Idempotency-Key: {{orderId}}
+X-Request-Id: sample-create-wechat-replay-001
+Content-Type: application/json
+
+< ./json/create_wechat_native_payment.json
+
+### Query WeChat payment
+GET {{baseUrl}}/v1/payments/{{orderId}}?provider=wechat
+Authorization: Bearer {{apiKey}}
+X-Request-Id: sample-query-wechat-001
+
+### Create Alipay web payment
+POST {{baseUrl}}/v1/payments
+Authorization: Bearer {{apiKey}}
+Idempotency-Key: order_202605260002
+X-Request-Id: sample-create-alipay-001
+Content-Type: application/json
+
+< ./json/create_alipay_web_payment.json
+
+### Query Alipay payment
+GET {{baseUrl}}/v1/payments/order_202605260002?provider=alipay
+Authorization: Bearer {{apiKey}}
+X-Request-Id: sample-query-alipay-001
+
+### Create WeChat refund
+POST {{baseUrl}}/v1/refunds
+Authorization: Bearer {{apiKey}}
+Idempotency-Key: {{refundId}}
+X-Request-Id: sample-create-refund-001
+Content-Type: application/json
+
+< ./json/create_wechat_refund.json
+
+### Replay WeChat refund with same idempotency key and body
+POST {{baseUrl}}/v1/refunds
+Authorization: Bearer {{apiKey}}
+Idempotency-Key: {{refundId}}
+X-Request-Id: sample-create-refund-replay-001
+Content-Type: application/json
+
+< ./json/create_wechat_refund.json
+
+### Query WeChat refund
+GET {{baseUrl}}/v1/refunds/{{refundId}}?provider=wechat
+Authorization: Bearer {{apiKey}}
+X-Request-Id: sample-query-refund-001
+
+### Create Alipay refund
+POST {{baseUrl}}/v1/refunds
+Authorization: Bearer {{apiKey}}
+Idempotency-Key: refund_202605260002_001
+X-Request-Id: sample-create-alipay-refund-001
+Content-Type: application/json
+
+< ./json/create_alipay_refund.json
+
+### Query Alipay refund
+GET {{baseUrl}}/v1/refunds/refund_202605260002_001?provider=alipay
+Authorization: Bearer {{apiKey}}
+X-Request-Id: sample-query-alipay-refund-001
+
+### Missing API key should be rejected
+GET {{baseUrl}}/v1/payments/{{orderId}}?provider=wechat
+X-Request-Id: sample-auth-missing-001
+
+### Invalid zero amount should be rejected before provider call
+POST {{baseUrl}}/v1/payments
+Authorization: Bearer {{apiKey}}
+Idempotency-Key: invalid_amount_zero_001
+X-Request-Id: sample-invalid-amount-zero-001
+Content-Type: application/json
+
+< ./json/invalid_zero_amount_payment.json
+
+### Invalid floating amount should be rejected before provider call
+POST {{baseUrl}}/v1/payments
+Authorization: Bearer {{apiKey}}
+Idempotency-Key: invalid_amount_float_001
+X-Request-Id: sample-invalid-amount-float-001
+Content-Type: application/json
+
+< ./json/invalid_float_amount_payment.json
+
+### WeChat payment webhook with invalid placeholder signature
+POST {{baseUrl}}/v1/webhooks/wechat/payments
+Wechatpay-Serial: invalid-placeholder
+Wechatpay-Signature: invalid-placeholder
+Wechatpay-Timestamp: 1779777720
+Wechatpay-Nonce: invalid-placeholder
+X-Request-Id: sample-wechat-webhook-invalid-001
+Content-Type: application/json
+
+< ./json/wechat_payment_webhook_invalid_signature.json
+
+### WeChat refund webhook with invalid placeholder signature
+POST {{baseUrl}}/v1/webhooks/wechat/refunds
+Wechatpay-Serial: invalid-placeholder
+Wechatpay-Signature: invalid-placeholder
+Wechatpay-Timestamp: 1779777720
+Wechatpay-Nonce: invalid-placeholder
+X-Request-Id: sample-wechat-refund-webhook-invalid-001
+Content-Type: application/json
+
+< ./json/wechat_refund_webhook_invalid_signature.json
+
+### Alipay payment webhook with invalid placeholder signature
+POST {{baseUrl}}/v1/webhooks/alipay/payments
+X-Request-Id: sample-alipay-webhook-invalid-001
+Content-Type: application/x-www-form-urlencoded
+
+< ./alipay_payment_webhook_invalid_signature.form
+
+### Alipay refund webhook with invalid placeholder signature
+POST {{baseUrl}}/v1/webhooks/alipay/refunds
+X-Request-Id: sample-alipay-refund-webhook-invalid-001
+Content-Type: application/x-www-form-urlencoded
+
+< ./alipay_refund_webhook_invalid_signature.form

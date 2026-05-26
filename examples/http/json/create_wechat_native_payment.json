@@ -1,0 +1,16 @@
+{
+  "provider": "wechat",
+  "merchant_order_id": "order_202605260001",
+  "amount": {
+    "currency": "CNY",
+    "amount_minor": 100
+  },
+  "subject": "Order 202605260001",
+  "description": "Payment for order 202605260001",
+  "channel": "native",
+  "notify_url": "https://merchant.example.com/payment-callback",
+  "expire_at": "2026-05-26T12:30:00+08:00",
+  "metadata": {
+    "business_user_id": "user_10001"
+  }
+}

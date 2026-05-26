@@ -1,6 +1,7 @@
 # Architecture Design
 
-Current step: Step 1 - Architecture Design.
+Current step: Architecture reference. Initial Step 1 design is complete; Step 4
+has produced a local-development MVP workspace.
 
 This document defines the architecture for the Rust unified payment SDK and API
 Gateway. It intentionally contains no implementation code.
@@ -243,7 +244,25 @@ The first implementation phase should not include:
 - Advanced payment routing
 - Multi-currency provider routing
 
-## Step 1 Output Status
+## Current Implementation Status
 
-Architecture design is complete at the documentation level. No implementation
-files have been created.
+Implemented:
+
+- Rust Cargo workspace with `common`, `core`, `storage`, `signing`,
+  `http-client`, `wechat`, `alipay`, and `gateway` packages.
+- Gateway `/v1` route shape, API key authentication, caller-scoped in-memory
+  payment/refund state, required POST idempotency keys, and unified error
+  responses.
+- Provider-neutral models, traits, status mappings, signing helper crate, and
+  local HTTP examples.
+
+Not production-complete:
+
+- Gateway still uses a local in-memory service instead of the shared
+  `PaymentService` plus durable storage.
+- WeChat Pay and Alipay adapters currently generate local provider actions and
+  mapping results; they do not perform live provider HTTP calls.
+- Provider webhook routes fail closed until real WeChat Pay and Alipay
+  signature verification, replay checks, and WeChat API v3 decryption are wired.
+- Durable idempotency, ledger transactions, webhook worker, migrations, and
+  operational deployment assets remain pending.

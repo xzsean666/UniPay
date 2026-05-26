@@ -40,16 +40,18 @@ or webhook decryption.
 1. Create a business order in the caller system.
 2. Call `POST /v1/payments` with a unique `merchant_order_id`.
 3. Show the returned `payment_action` to the user.
-4. Receive UniPay webhook or poll `GET /v1/payments/{merchant_order_id}`.
+4. Poll `GET /v1/payments/{merchant_order_id}` until caller-facing webhooks
+   are added.
 5. Mark the business order paid only after UniPay reports `succeeded`.
 6. For refunds, call `POST /v1/refunds` with a unique `merchant_refund_id`.
-7. Confirm refund result through webhook or refund query.
+7. Confirm refund result through refund query.
 
 ## Idempotency Requirements
 
 Payment creation:
 
 - Use one `merchant_order_id` per business order.
+- Send `Idempotency-Key` on every create request.
 - Retry the same request with the same `merchant_order_id`.
 - Do not create a new `merchant_order_id` after a timeout until the original
   order has been queried.
@@ -57,16 +59,29 @@ Payment creation:
 Refund creation:
 
 - Use one `merchant_refund_id` per refund attempt.
+- Send `Idempotency-Key` on every refund request.
 - Retry the same request with the same `merchant_refund_id`.
 - Create a new `merchant_refund_id` only for a new refund attempt.
 
-Recommended header:
+Required header:
 
 ```text
 Idempotency-Key: <same-value-for-same-business-operation>
 ```
 
 The idempotency header should match the business operation, not the HTTP retry.
+Reusing the same header value with different parameters returns
+`IDEMPOTENCY_CONFLICT`.
+
+## Caller Event Delivery
+
+The current Gateway contract covers provider-to-UniPay webhook ingestion only.
+Caller-facing webhook delivery from UniPay to business backends is a future
+contract and must define payload schema, signing, retries, ordering, and
+deduplication before implementation.
+
+Until that contract exists, backend systems should poll payment and refund
+query routes after create/refund calls and after user return events.
 
 ## Authentication
 
@@ -252,4 +267,3 @@ Before going live:
 - Never grant goods based only on create-payment success.
 - Use webhook or query result to confirm final state.
 - Monitor payment and refund failure rates.
-

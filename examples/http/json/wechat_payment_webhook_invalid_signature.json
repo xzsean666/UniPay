@@ -1,0 +1,13 @@
+{
+  "id": "EV-202605260001",
+  "create_time": "2026-05-26T12:02:00+08:00",
+  "event_type": "TRANSACTION.SUCCESS",
+  "resource_type": "encrypt-resource",
+  "resource": {
+    "algorithm": "AEAD_AES_256_GCM",
+    "ciphertext": "invalid-placeholder",
+    "associated_data": "transaction",
+    "nonce": "invalid-placeholder"
+  },
+  "summary": "Payment successful"
+}

@@ -1,0 +1,16 @@
+{
+  "provider": "alipay",
+  "merchant_order_id": "order_202605260002",
+  "amount": {
+    "currency": "CNY",
+    "amount_minor": 199
+  },
+  "subject": "Order 202605260002",
+  "description": "Payment for order 202605260002",
+  "channel": "web",
+  "notify_url": "https://merchant.example.com/alipay-payment-callback",
+  "expire_at": "2026-05-26T12:45:00+08:00",
+  "metadata": {
+    "business_user_id": "user_10002"
+  }
+}

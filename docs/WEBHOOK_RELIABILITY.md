@@ -11,6 +11,11 @@ delayed, reordered, and malicious requests.
 
 Provider webhooks are not trusted until signature verification succeeds.
 
+Current Step 4 implementation note: Gateway webhook routes intentionally fail
+closed with `SIGNATURE_VERIFY_FAILED` because real WeChat Pay and Alipay
+signature verifiers are not wired yet. This is safer than accepting callbacks by
+parsing JSON or form fields alone.
+
 ## Processing Pipeline
 
 ```text
@@ -203,4 +208,3 @@ Tests must cover:
 - Out-of-order event handling.
 - Dead-letter transition.
 - Provider-specific acknowledgement body.
-

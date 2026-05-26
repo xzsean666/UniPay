@@ -1,0 +1,19 @@
+[package]
+name = "unipay-wechat"
+version = "0.1.0"
+edition = "2021"
+description = "UniPay WeChat Pay v3 provider adapter"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+async-trait.workspace = true
+chrono.workspace = true
+percent-encoding = "2"
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+unipay-common = { path = "../common" }
+unipay-core = { path = "../core" }
+
+[dev-dependencies]
+tokio.workspace = true

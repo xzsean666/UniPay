@@ -1,0 +1,13 @@
+{
+  "id": "EV-202605260002",
+  "create_time": "2026-05-26T12:11:00+08:00",
+  "event_type": "REFUND.SUCCESS",
+  "resource_type": "encrypt-resource",
+  "resource": {
+    "algorithm": "AEAD_AES_256_GCM",
+    "ciphertext": "invalid-placeholder",
+    "associated_data": "refund",
+    "nonce": "invalid-placeholder"
+  },
+  "summary": "Refund successful"
+}
