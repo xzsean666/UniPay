@@ -44,6 +44,7 @@ UniPay/
   crates/
     common/
     core/
+    storage/
     signing/
     http-client/
     wechat/
@@ -53,11 +54,22 @@ UniPay/
     api/
     auth/
     app/
+    worker/
   examples/
   docs/
+    README.md
     ARCHITECTURE.md
     SPEC.md
     BUILD.md
+    API_CONTRACT.md
+    CLIENT_INTEGRATION.md
+    ERROR_CODES.md
+    DATA_MODEL.md
+    WEBHOOK_RELIABILITY.md
+    SECURITY.md
+    OPERATIONS.md
+    PROVIDER_MAPPING.md
+    PROVIDER_ADAPTER_GUIDE.md
     INTEGRATION_DOCS.md
     nextsession.md
 ```
@@ -72,6 +84,7 @@ boundary, not as an MVP requirement.
 | --- | --- | --- | --- | --- |
 | `crates/common` | Shared value objects and low-level helpers that are not payment-provider-specific. | Primitive values, serialized data, timestamps. | Validated shared types and helper results. | Standard library, small shared dependencies only. |
 | `crates/core` | Unified payment domain, provider traits, request/response models, status model, error model. | SDK or Gateway payment commands. | Provider-neutral payment results and errors. | `common`; no concrete provider dependency. |
+| `crates/storage` | Durable payment ledger, refund ledger, webhook event, idempotency, and provider request persistence boundary. | Core storage commands and transaction intents. | Persisted records, loaded records, concurrency results. | `core`, database driver selected during implementation. |
 | `crates/signing` | Signing, verification, key loading, certificate-related abstractions. | Canonical message bytes, keys, certificates, headers. | Signatures, verification results, signing errors. | Crypto crates; no gateway dependency. |
 | `crates/http-client` | Shared async HTTP behavior for provider adapters. | HTTP request intent, timeout, retry policy. | Provider HTTP response or transport error. | `reqwest`, `tokio`, `tracing`. |
 | `crates/wechat` | WeChat Pay v3 adapter. | Unified payment/refund/query/webhook requests plus WeChat config. | Unified payment results and verified webhook events. | `core`, `signing`, `http-client`. |
@@ -80,6 +93,7 @@ boundary, not as an MVP requirement.
 | `gateway/api` | HTTP route definitions, request validation, response mapping. | HTTP requests. | HTTP responses with unified error body. | `gateway/app`, `gateway/auth`, `core`. |
 | `gateway/auth` | API key and JWT authentication for gateway callers. | HTTP headers, configured credentials. | Authenticated caller context or auth error. | Gateway configuration and JWT dependency. |
 | `gateway/app` | Gateway composition root and runtime wiring. | Configuration, provider selection, route modules. | Running HTTP service. | Gateway modules and SDK crates. |
+| `gateway/worker` | Asynchronous webhook and recovery processing. | Persisted webhook events and recovery jobs. | Ledger updates, dead-letter records, operational metrics. | `core`, `storage`, provider adapters. |
 | `examples` | Minimal integration examples after implementation starts. | Example configuration. | Runnable examples. | Implemented crates only. |
 | `docs` | Architecture, specification, build, handoff, and external docs index. | Project decisions and current status. | Durable context for future AI sessions. | None. |
 
@@ -89,30 +103,38 @@ boundary, not as an MVP requirement.
 
 1. Business system creates a unified payment request.
 2. SDK entry point validates the provider-neutral request.
-3. Payment Core selects the configured provider adapter.
-4. Provider adapter maps the request into provider-specific fields.
-5. Signing module signs the provider request when required.
-6. HTTP client sends the provider request.
-7. Provider adapter maps the response back into a unified response.
-8. SDK returns the unified response to the business system.
+3. Payment Core creates or loads idempotency and payment ledger records.
+4. Payment Core selects the configured provider adapter.
+5. Provider adapter maps the request into provider-specific fields.
+6. Signing module signs the provider request when required.
+7. HTTP client sends the provider request.
+8. Provider request outcome is persisted for audit and recovery.
+9. Provider adapter maps the response back into a unified response.
+10. SDK returns the unified response to the business system.
 
 ### Gateway Payment Creation
 
 1. Business system sends an HTTP request to the gateway.
 2. Gateway auth validates API key or JWT.
 3. Gateway API validates and normalizes the request body.
-4. Gateway app calls the same Payment Core used by the SDK.
-5. Provider adapter executes provider-specific behavior.
-6. Gateway maps the unified result or error into a stable HTTP response.
+4. Gateway API applies idempotency key policy.
+5. Gateway app calls the same Payment Core used by the SDK.
+6. Payment Core persists ledger and provider request records.
+7. Provider adapter executes provider-specific behavior.
+8. Gateway maps the unified result or error into a stable HTTP response.
 
 ### Webhook Processing
 
 1. Provider sends callback data to the gateway or SDK webhook handler.
 2. Webhook module captures raw body and provider headers.
 3. Signing module verifies provider signature or certificate chain.
-4. Provider adapter parses the verified payload.
-5. Payment Core converts it to a unified payment event.
-6. Business system receives a provider-neutral event.
+4. Webhook handler derives a deduplication key.
+5. Webhook event is durably persisted or recognized as duplicate.
+6. Gateway acknowledges provider according to provider-specific rules.
+7. Worker parses the verified payload.
+8. Payment Core converts it to a unified payment or refund event.
+9. Payment Core updates the ledger through controlled state transitions.
+10. Business system observes a provider-neutral event or query result.
 
 ## Key Design Decisions
 
@@ -144,6 +166,9 @@ Payment creation and refund requests must carry a business order identifier or
 idempotency key. Provider adapters must preserve this identifier when mapping
 requests.
 
+Idempotency must be backed by durable storage. In-memory idempotency is not
+acceptable for production.
+
 ### Errors Are Unified but Traceable
 
 Public errors should be provider-neutral. Internal errors must retain enough
@@ -160,6 +185,10 @@ variables directly.
 Webhook verification must use the raw request body and original provider headers.
 Parsed JSON alone is not enough for reliable signature verification.
 
+Webhook processing must also include durable event storage, deduplication,
+provider acknowledgement policy, asynchronous processing, and dead-letter
+handling.
+
 ### Gateway Auth Is Separate From Payment Auth
 
 Gateway caller authentication protects the API surface. Provider signing protects
@@ -171,16 +200,36 @@ Stripe, PayPal, Apple Pay, and Google Pay should be added by implementing new
 provider adapters behind existing core boundaries. Adding a provider must not
 force changes to Gateway route contracts unless the business capability changes.
 
+New providers must follow `PROVIDER_ADAPTER_GUIDE.md` and update
+`PROVIDER_MAPPING.md`.
+
+### Gateway APIs Are Contracted
+
+Other backend systems integrate through versioned HTTP APIs. The stable contract
+is defined in `API_CONTRACT.md`, and caller behavior is defined in
+`CLIENT_INTEGRATION.md`.
+
+### Production Requires Durable Operations
+
+Production deployments require the storage, security, webhook reliability, and
+operations requirements defined in `DATA_MODEL.md`,
+`WEBHOOK_RELIABILITY.md`, `SECURITY.md`, and `OPERATIONS.md`.
+
 ## MVP Scope
 
 The first implementation phase should include:
 
 - Unified payment core
+- Durable payment and refund ledger
+- Durable idempotency records
+- Durable provider request records
+- Durable webhook event records
 - WeChat Pay v3 Native payment
 - Alipay web payment
 - Payment query
 - Refund
 - Webhook verification and parsing
+- Webhook deduplication and asynchronous processing
 - Gateway routes for create, query, and refund
 - API key authentication
 - Structured logging and unified error responses
@@ -198,4 +247,3 @@ The first implementation phase should not include:
 
 Architecture design is complete at the documentation level. No implementation
 files have been created.
-

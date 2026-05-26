@@ -47,6 +47,21 @@ Required output:
 - `docs/BUILD.md`: build and usage instructions
 - `docs/INTEGRATION_DOCS.md`: official integration documentation index
 
+Production hardening documentation, when the project is intended for production
+or cross-backend integration:
+
+- `docs/README.md`: documentation index
+- `docs/API_CONTRACT.md`: stable Gateway API contract
+- `docs/openapi.yaml`: machine-readable Gateway API draft
+- `docs/CLIENT_INTEGRATION.md`: backend integration guide
+- `docs/ERROR_CODES.md`: stable public error codes
+- `docs/DATA_MODEL.md`: durable ledger and idempotency model
+- `docs/WEBHOOK_RELIABILITY.md`: webhook reliability rules
+- `docs/SECURITY.md`: secret, auth, logging, and compliance rules
+- `docs/OPERATIONS.md`: deployment, metrics, alerts, and runbooks
+- `docs/PROVIDER_MAPPING.md`: provider status, error, amount, and retry mapping
+- `docs/PROVIDER_ADAPTER_GUIDE.md`: provider extension guide
+
 Do not write implementation code in this step.
 
 ### Step 3: Context Handoff
@@ -129,9 +144,12 @@ The project must separate these concerns:
 - Payment domain model
 - Provider abstraction
 - Provider adapters
+- Durable ledger persistence
+- Idempotency persistence
 - Signing and verification
 - HTTP client behavior
 - Webhook processing
+- Webhook event persistence and asynchronous processing
 - Gateway routing
 - Gateway authentication
 - Configuration loading
@@ -158,10 +176,22 @@ That file must contain:
 Before changing a payment provider adapter, refresh the relevant official docs
 link and confirm the documented API is still current.
 
+Before changing Gateway API behavior, update both:
+
+- `docs/API_CONTRACT.md`
+- `docs/openapi.yaml`
+
+Before changing public error behavior, update:
+
+- `docs/ERROR_CODES.md`
+
+Before changing provider status, amount, or retry behavior, update:
+
+- `docs/PROVIDER_MAPPING.md`
+
 ## Self-Correction Rule
 
 If an agent detects premature coding, poor modularization, or rising accidental
 complexity, it must stop and correct the structure before continuing.
 
 Refactoring is preferred over adding more logic to a confusing module.
-

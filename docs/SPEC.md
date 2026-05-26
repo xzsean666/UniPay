@@ -16,6 +16,7 @@ It provides:
 - A shared Payment Core used by both SDK and Gateway.
 - Provider adapters for payment platforms.
 - Unified signing, webhook verification, error handling, and idempotency rules.
+- Durable payment, refund, provider request, webhook, and idempotency records.
 
 ## MVP Scope
 
@@ -29,11 +30,14 @@ MVP capabilities:
 - Create payment.
 - Query payment.
 - Create refund.
+- Query refund.
 - Verify and parse payment webhook.
 - Verify and parse refund webhook where provider support is included in MVP.
 - Expose SDK and HTTP API entry points.
 - Support API key authentication for the Gateway.
 - Reserve JWT support as a planned gateway authentication mode.
+- Persist payment and refund ledger records.
+- Persist provider request and webhook event records.
 
 Out of scope for MVP:
 
@@ -58,21 +62,24 @@ Required SDK operations:
 | Create payment | Start a provider payment flow. | Unified create payment request. | Unified create payment response. |
 | Query payment | Fetch current payment status. | Provider, merchant order id, optional provider transaction id. | Unified payment status result. |
 | Refund payment | Request full or partial refund. | Unified refund request. | Unified refund response. |
+| Query refund | Fetch current refund status. | Provider, merchant refund id, optional provider refund id. | Unified refund status result. |
 | Handle webhook | Verify and parse provider callback. | Provider, raw body, original headers. | Unified payment event or refund event. |
 
 ### Gateway Entry Point
 
 The Gateway exposes stable HTTP APIs over the SDK.
 
-Required MVP routes:
+Required MVP routes are versioned under `/v1`. See `API_CONTRACT.md` for the
+complete contract.
 
 | Route | Method | Purpose |
 | --- | --- | --- |
-| `/payments/create` | `POST` | Create a payment through the selected provider. |
-| `/payments/refund` | `POST` | Create a refund through the selected provider. |
-| `/payments/query` | `GET` | Query payment status by provider and merchant order id. |
-| `/webhooks/{provider}` | `POST` | Receive provider payment callbacks. |
-| `/webhooks/{provider}/refunds` | `POST` | Receive provider refund callbacks when implemented. |
+| `/v1/payments` | `POST` | Create a payment through the selected provider. |
+| `/v1/payments/{merchant_order_id}` | `GET` | Query payment status by provider and merchant order id. |
+| `/v1/refunds` | `POST` | Create a refund through the selected provider. |
+| `/v1/refunds/{merchant_refund_id}` | `GET` | Query refund status by provider and merchant refund id. |
+| `/v1/webhooks/{provider}/payments` | `POST` | Receive provider payment callbacks. |
+| `/v1/webhooks/{provider}/refunds` | `POST` | Receive provider refund callbacks when implemented. |
 
 Gateway responses must use a stable JSON envelope:
 
@@ -100,6 +107,8 @@ Required payment concepts:
 | Refund id | Business refund id; primary idempotency key for refund creation. |
 | Provider refund id | Payment platform refund id. |
 | Webhook event | Verified provider callback converted into a provider-neutral event. |
+| Provider request record | Redacted audit record for outbound provider calls. |
+| Idempotency record | Durable record that prevents duplicate business operations. |
 
 Required payment status values:
 
@@ -269,6 +278,21 @@ Required configuration groups:
 Provider adapters must receive explicit configuration objects. They must not read
 environment variables directly.
 
+## Storage Requirements
+
+Production storage requirements are defined in `DATA_MODEL.md`.
+
+MVP must persist:
+
+- Payment ledger records.
+- Refund ledger records.
+- Provider request records.
+- Webhook event records.
+- Idempotency records.
+
+Provider adapters must not write storage directly. Core or application services
+own transaction boundaries and state transitions.
+
 ## Error Model
 
 Errors must be unified but traceable.
@@ -297,6 +321,8 @@ Each error should preserve:
 - Safe public message.
 - Internal diagnostic detail for logs.
 
+Stable public error codes are defined in `ERROR_CODES.md`.
+
 ## Idempotency
 
 Payment creation idempotency:
@@ -312,8 +338,9 @@ Refund idempotency:
 
 Gateway idempotency:
 
-- Gateway should accept an explicit idempotency header in a future phase.
-- MVP can rely on merchant order id and merchant refund id.
+- Gateway should accept an explicit `Idempotency-Key` header.
+- MVP must also enforce merchant order id and merchant refund id uniqueness.
+- Idempotency records must be durable.
 
 ## Observability
 
@@ -347,6 +374,11 @@ MVP tests should cover:
 - Gateway request validation.
 - Gateway error response envelope.
 - Idempotency behavior for retry cases.
+- Contract tests for `API_CONTRACT.md`.
+- Ledger state transition tests.
+- Webhook deduplication and dead-letter tests.
+- Provider mapping tests from `PROVIDER_MAPPING.md`.
+- Security redaction tests.
 
 Provider network calls should be tested with mocks before using sandbox
 credentials.
@@ -362,3 +394,14 @@ Before implementing or changing provider behavior:
 4. Update the access date or notes in `docs/INTEGRATION_DOCS.md` when docs
    change.
 
+Production-facing implementation must also keep these documents current:
+
+- `API_CONTRACT.md`
+- `CLIENT_INTEGRATION.md`
+- `ERROR_CODES.md`
+- `DATA_MODEL.md`
+- `WEBHOOK_RELIABILITY.md`
+- `SECURITY.md`
+- `OPERATIONS.md`
+- `PROVIDER_MAPPING.md`
+- `PROVIDER_ADAPTER_GUIDE.md`

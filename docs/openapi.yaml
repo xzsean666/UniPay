@@ -1,0 +1,513 @@
+openapi: 3.1.0
+info:
+  title: UniPay Gateway API
+  version: 1.0.0
+  description: Provider-neutral payment API for backend systems.
+servers:
+  - url: https://unipay.example.com
+    description: Production base URL to be configured per deployment
+  - url: https://sandbox-unipay.example.com
+    description: Sandbox base URL to be configured per deployment
+security:
+  - bearerAuth: []
+paths:
+  /v1/payments:
+    post:
+      operationId: createPayment
+      summary: Create a payment
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/RequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePaymentRequest"
+      responses:
+        "200":
+          description: Payment created or existing idempotent result returned.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Payment"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "409":
+          $ref: "#/components/responses/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/ErrorResponse"
+        "503":
+          $ref: "#/components/responses/ErrorResponse"
+        "504":
+          $ref: "#/components/responses/ErrorResponse"
+  /v1/payments/{merchant_order_id}:
+    get:
+      operationId: queryPayment
+      summary: Query payment by merchant order id
+      parameters:
+        - name: merchant_order_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: provider
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/Provider"
+        - $ref: "#/components/parameters/RequestId"
+      responses:
+        "200":
+          description: Payment query result.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Payment"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "503":
+          $ref: "#/components/responses/ErrorResponse"
+        "504":
+          $ref: "#/components/responses/ErrorResponse"
+  /v1/refunds:
+    post:
+      operationId: createRefund
+      summary: Create a refund
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/RequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRefundRequest"
+      responses:
+        "200":
+          description: Refund created or existing idempotent result returned.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Refund"
+        "400":
+          $ref: "#/components/responses/ErrorResponse"
+        "401":
+          $ref: "#/components/responses/ErrorResponse"
+        "409":
+          $ref: "#/components/responses/ErrorResponse"
+        "422":
+          $ref: "#/components/responses/ErrorResponse"
+        "503":
+          $ref: "#/components/responses/ErrorResponse"
+        "504":
+          $ref: "#/components/responses/ErrorResponse"
+  /v1/refunds/{merchant_refund_id}:
+    get:
+      operationId: queryRefund
+      summary: Query refund by merchant refund id
+      parameters:
+        - name: merchant_refund_id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: provider
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/Provider"
+        - $ref: "#/components/parameters/RequestId"
+      responses:
+        "200":
+          description: Refund query result.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Refund"
+        "404":
+          $ref: "#/components/responses/ErrorResponse"
+        "503":
+          $ref: "#/components/responses/ErrorResponse"
+        "504":
+          $ref: "#/components/responses/ErrorResponse"
+  /v1/webhooks/{provider}/payments:
+    post:
+      operationId: receivePaymentWebhook
+      summary: Receive provider payment webhook
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Provider"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "200":
+          description: Provider-specific success acknowledgement.
+        "400":
+          description: Invalid or unverifiable webhook.
+  /v1/webhooks/{provider}/refunds:
+    post:
+      operationId: receiveRefundWebhook
+      summary: Receive provider refund webhook
+      security: []
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Provider"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      responses:
+        "200":
+          description: Provider-specific success acknowledgement.
+        "400":
+          description: Invalid or unverifiable webhook.
+  /v1/health/live:
+    get:
+      operationId: liveness
+      summary: Liveness check
+      security: []
+      responses:
+        "200":
+          description: Process is alive.
+  /v1/health/ready:
+    get:
+      operationId: readiness
+      summary: Readiness check
+      security: []
+      responses:
+        "200":
+          description: Service is ready.
+        "503":
+          description: Service is not ready.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+    RequestId:
+      name: X-Request-Id
+      in: header
+      required: false
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
+  responses:
+    ErrorResponse:
+      description: UniPay error response.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+  schemas:
+    Provider:
+      type: string
+      enum:
+        - wechat
+        - alipay
+    PaymentChannel:
+      type: string
+      enum:
+        - native
+        - web
+    PaymentStatus:
+      type: string
+      enum:
+        - pending
+        - processing
+        - succeeded
+        - failed
+        - closed
+        - refunding
+        - partially_refunded
+        - refunded
+        - unknown
+    RefundStatus:
+      type: string
+      enum:
+        - pending
+        - processing
+        - succeeded
+        - failed
+        - closed
+        - unknown
+    Money:
+      type: object
+      required:
+        - currency
+        - amount_minor
+      properties:
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          examples:
+            - CNY
+        amount_minor:
+          type: integer
+          minimum: 1
+          examples:
+            - 100
+    PaymentAction:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - qr_code_url
+            - redirect_url
+            - html_form
+            - sdk_payload
+            - none
+        value:
+          type:
+            - string
+            - "null"
+        payload:
+          type:
+            - object
+            - "null"
+          additionalProperties: true
+    CreatePaymentRequest:
+      type: object
+      required:
+        - provider
+        - merchant_order_id
+        - amount
+        - subject
+        - channel
+      properties:
+        provider:
+          $ref: "#/components/schemas/Provider"
+        merchant_order_id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        amount:
+          $ref: "#/components/schemas/Money"
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 128
+        description:
+          type: string
+          maxLength: 256
+        channel:
+          $ref: "#/components/schemas/PaymentChannel"
+        notify_url:
+          type: string
+          format: uri
+        expire_at:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+    CreateRefundRequest:
+      type: object
+      required:
+        - provider
+        - merchant_order_id
+        - merchant_refund_id
+        - amount
+      properties:
+        provider:
+          $ref: "#/components/schemas/Provider"
+        merchant_order_id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        merchant_refund_id:
+          type: string
+          minLength: 1
+          maxLength: 64
+        amount:
+          $ref: "#/components/schemas/Money"
+        reason:
+          type: string
+          maxLength: 256
+        notify_url:
+          type: string
+          format: uri
+        metadata:
+          type: object
+          additionalProperties:
+            type: string
+    Payment:
+      type: object
+      required:
+        - payment_id
+        - provider
+        - merchant_order_id
+        - status
+        - amount
+        - created_at
+      properties:
+        payment_id:
+          type: string
+        provider:
+          $ref: "#/components/schemas/Provider"
+        merchant_order_id:
+          type: string
+        provider_transaction_id:
+          type:
+            - string
+            - "null"
+        status:
+          $ref: "#/components/schemas/PaymentStatus"
+        amount:
+          $ref: "#/components/schemas/Money"
+        payment_action:
+          $ref: "#/components/schemas/PaymentAction"
+        expires_at:
+          type:
+            - string
+            - "null"
+          format: date-time
+        paid_at:
+          type:
+            - string
+            - "null"
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type:
+            - string
+            - "null"
+          format: date-time
+    Refund:
+      type: object
+      required:
+        - refund_id
+        - provider
+        - merchant_order_id
+        - merchant_refund_id
+        - status
+        - amount
+        - created_at
+      properties:
+        refund_id:
+          type: string
+        provider:
+          $ref: "#/components/schemas/Provider"
+        merchant_order_id:
+          type: string
+        merchant_refund_id:
+          type: string
+        provider_refund_id:
+          type:
+            - string
+            - "null"
+        status:
+          $ref: "#/components/schemas/RefundStatus"
+        amount:
+          $ref: "#/components/schemas/Money"
+        succeeded_at:
+          type:
+            - string
+            - "null"
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type:
+            - string
+            - "null"
+          format: date-time
+    SuccessEnvelope:
+      type: object
+      required:
+        - success
+        - data
+        - trace_id
+      properties:
+        success:
+          type: boolean
+          const: true
+        data: {}
+        trace_id:
+          type: string
+    ErrorEnvelope:
+      type: object
+      required:
+        - success
+        - error
+        - trace_id
+      properties:
+        success:
+          type: boolean
+          const: false
+        error:
+          $ref: "#/components/schemas/ErrorDetail"
+        trace_id:
+          type: string
+    ErrorDetail:
+      type: object
+      required:
+        - code
+        - message
+        - retryable
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        provider:
+          $ref: "#/components/schemas/Provider"
+        retryable:
+          type: boolean
+        operation:
+          type: string

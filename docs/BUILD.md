@@ -37,6 +37,8 @@ cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo build --workspace
+cargo audit
+cargo deny check
 ```
 
 Gateway run command after implementation should follow this shape:
@@ -47,6 +49,12 @@ cargo run -p unipay-gateway
 
 The exact package name may change during Step 4, but it must be documented here
 when implementation starts.
+
+API contract artifacts:
+
+- `docs/API_CONTRACT.md` is the canonical human-readable contract.
+- `docs/openapi.yaml` is the machine-readable draft for client generation and
+  contract tests. It must match `docs/API_CONTRACT.md`.
 
 ## Planned Configuration
 
@@ -60,6 +68,8 @@ Expected configuration groups:
 | Gateway server | Host, port, request body limit, timeout. |
 | Gateway auth | API key list, JWT settings when enabled. |
 | HTTP client | Timeout, retry policy, user agent. |
+| Storage | Database URL or secret reference, pool size, migration policy. |
+| Worker | Webhook processing concurrency, retry policy, dead-letter policy. |
 | WeChat Pay | Merchant id, app id, private key path, serial number, public key or platform certificate, API v3 key, notify URL. |
 | Alipay | App id, private key path, Alipay public key or certificate, gateway URL, charset, sign type, notify URL, return URL. |
 | Observability | Log level, trace id behavior. |
@@ -74,11 +84,14 @@ Expected environments:
 
 The Gateway should expose:
 
-- `POST /payments/create`
-- `POST /payments/refund`
-- `GET /payments/query`
-- `POST /webhooks/{provider}`
-- `POST /webhooks/{provider}/refunds`
+- `POST /v1/payments`
+- `GET /v1/payments/{merchant_order_id}`
+- `POST /v1/refunds`
+- `GET /v1/refunds/{merchant_refund_id}`
+- `POST /v1/webhooks/{provider}/payments`
+- `POST /v1/webhooks/{provider}/refunds`
+- `GET /v1/health/live`
+- `GET /v1/health/ready`
 
 Gateway callers must authenticate with API key in MVP. JWT support is planned
 but not required for the first implementation pass.
@@ -103,15 +116,18 @@ Recommended Step 4 implementation order:
 1. Create Cargo workspace and empty crate boundaries.
 2. Implement common value objects.
 3. Implement core provider traits and domain models.
-4. Implement signing interfaces and test fixtures.
-5. Implement shared HTTP client boundary.
-6. Implement WeChat Pay Native create/query/refund mapping.
-7. Implement WeChat Pay webhook verification and decryption.
-8. Implement Alipay web payment create/query/refund mapping.
-9. Implement Alipay async notification verification.
-10. Implement Gateway composition, API routes, and API key auth.
-11. Add examples and integration test scaffolding.
-12. Update this document with exact build and run commands.
+4. Implement storage interfaces and ledger state transitions.
+5. Implement signing interfaces and test fixtures.
+6. Implement shared HTTP client boundary.
+7. Implement Gateway API contract skeleton and validation.
+8. Implement webhook event persistence and deduplication.
+9. Implement WeChat Pay Native create/query/refund mapping.
+10. Implement WeChat Pay webhook verification and decryption.
+11. Implement Alipay web payment create/query/refund mapping.
+12. Implement Alipay async notification verification.
+13. Implement Gateway composition, API routes, worker, and API key auth.
+14. Add examples and integration test scaffolding.
+15. Update this document with exact build and run commands.
 
 Each step should remain independently reviewable and testable.
 
@@ -124,6 +140,10 @@ Before merging implementation work:
 - Unit tests must pass.
 - Provider behavior must be tested with mocked HTTP responses.
 - Sandbox tests must be documented separately from normal unit tests.
+- API contract tests must pass.
+- Security redaction tests must pass.
+- Webhook duplicate and replay tests must pass.
+- Dependency audit and license checks must pass or have approved exceptions.
 
 Webhook tests must include raw body verification. Tests that verify parsed JSON
 only are insufficient.
@@ -134,6 +154,14 @@ When implementation starts, update:
 
 - `docs/BUILD.md` with actual command output expectations.
 - `docs/SPEC.md` if scope changes.
+- `docs/API_CONTRACT.md` if Gateway behavior changes.
+- `docs/CLIENT_INTEGRATION.md` if caller behavior changes.
+- `docs/ERROR_CODES.md` if public errors change.
+- `docs/DATA_MODEL.md` if persistence behavior changes.
+- `docs/WEBHOOK_RELIABILITY.md` if callback behavior changes.
+- `docs/SECURITY.md` if secret, auth, or logging behavior changes.
+- `docs/OPERATIONS.md` if deployment or runtime behavior changes.
+- `docs/PROVIDER_MAPPING.md` if provider mappings change.
+- `docs/PROVIDER_ADAPTER_GUIDE.md` if extension rules change.
 - `docs/INTEGRATION_DOCS.md` when provider docs are refreshed.
 - `docs/nextsession.md` at the end of the session.
-
