@@ -22,6 +22,7 @@ Completed the required pre-implementation documentation workflow:
    integration.
 5. Step 4 MVP implementation and production-blocker hardening pass.
 6. Step 4 Docker deployment and environment variable examples.
+7. Step 4 GitHub root README.
 
 Commits created:
 
@@ -117,6 +118,8 @@ Root guidance:
 
 - `Agent.md` defines the strict AI workflow, architecture rules, documentation
   rules, git workflow, and implementation gate.
+- `README.md` provides the GitHub-facing project overview, quick start, Docker
+  usage, API route summary, and production roadmap.
 
 Documentation:
 
